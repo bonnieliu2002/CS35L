@@ -1,0 +1,174 @@
+Bonnie Liu
+005300989
+Assignment 8
+Homework
+------------
+
+First, I cloned again to start over with a clean repository because later I'm
+going to have to apply the quote-3.0-path.txt. Next, I checked out version 3.0 of
+Diffutils from my repository into a new branch called "quote."
+$ git clone https://git.savannah.gnu.org/git/diffutils.git hwdiffutils
+Cloning into 'hwdiffutils'...
+remote: Counting objects: 5333, done.
+remote: Compressing objects: 100% (1424/1424), done.
+remote: Total 5333 (delta 3846), reused 5333 (delta 3846)
+Receiving objects: 100% (5333/5333), 1.54 MiB | 0 bytes/s, done.
+Resolving deltas: 100% (3846/3846), done.
+$ cd hwdiffutils
+$ git checkout v3.0 -b quote
+Switched to a new branch 'quote'
+
+In order to install my changes into this new branch, I ran the patch command with
+my patch quote-3.0-patch.txt:
+$ patch -p1 < /u/cs/ugrad/bonniel/Desktop/CS35L/quote-3.0-patch.txt
+patching file src/cmp.c
+patching file src/diff.c
+patching file src/diff3.c
+patching file src/dir.c
+patching file src/sdiff.c
+patching file src/util.c
+
+I clicked on the link to add-change-log-entry-other-window (C-x 4 a) in the spec,
+and I found that this command adds a new entry to the change log file for the file
+I am editing. I tried it on my quote-3.0-patch.txt file, and it opened up a file
+for me to add a description. This was my ChangeLog entry. Since the spec said to
+adapt the change log from the original patch, I opened up another Putty session,
+vimmed into quote-patch.txt, and copied and pasted a part of it into my own
+ChangeLog entry.
+$ cd ..
+$ emacs quote-3.0-patch.txt
+C-x 4 a
+2020-05-29  Bonnie Liu  <bonniel@lnxsrv06.seas.ucla.edu>
+
+        * quote-3.0-patch.txt: This is in response to a recent change in the GN\
+U coding standards, which now suggest quoting 'like this' or "like this", inste\
+ad of `like this' or ``like this''. Changes are conservative and do not affect\
+ commentary and documentation.
+C-x C-c (save & exit)
+
+After that, I switched back into hwdiffutils and committed my changes to the new
+branch, using ChangeLog entry as the commit message. Upon looking at Git
+documentation, I found that git commit takes an option -F <file>, which takes the
+commit message from the given file. Before that though, I used git add to add
+changes in the working directory to the staging area.
+$ cd hwdiffutils
+$ git add .
+$ git commit -F /u/cs/ugrad/bonniel/Desktop/CS35L/ChangeLog
+[quote be41113] 2020-05-29  Bonnie Liu  <bonniel@lnxsrv06.seas.ucla.edu>
+ Committer: Bonnie Liu <bonniel@lnxsrv06.seas.ucla.edu>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 6 files changed, 43 insertions(+), 43 deletions(-)
+
+Next, I looked up how to use git format-patch, which prepares each commit with
+its patch in one file per commit, formatted to resemble UNIX mailbox format. I
+decided to use the -1 option because I want to format only <commit> itself. I
+printed all commits to the standard output in mbox format instead of creating a
+file for each one using the --stdout option, and then I redirected the result into
+a new file formatted-patch.txt.
+$ git format-patch -1 --stdout > formatted-patch.txt
+
+In order to verify that my patch works, I first moved formatted-patch.txt out of
+hwdiffutils. Then I cloned again, and this time I named the new folder
+newhwdiffutils. Next, I switched into newhwdiffutils, checked out version 3.0 into
+a temporary branch named patchery, and applied the patch with the command git am.
+I looked up git am online, and I found that it splits mail message in a mailbox
+into commit log message, authorship information and patches, and applies them to
+the current branch.
+$ mv formatted-patch.txt ..
+$ cd ..
+$ git clone https://git.savannah.gnu.org/git/diffutils.git newhwdiffutils
+$ cd newhwdiffutils
+$ git checkout v3.0 -b patchery
+Switched to a new branch 'patchery'
+$ git am < /u/cs/ugrad/bonniel/Desktop/CS35L/formatted-patch.txt
+Applying: 2020-05-29 Bonnie Liu <bonniel@lnxsrv06.seas.ucla.edu>
+
+Then I built the result system like I did in the lab, checking that it works with
+make check:
+$ ./bootstrap
+$ vim patch
+# I copied the contents of the additional patch mentioned in the spec into the
+# file patch. Then I exited vim.
+$ patch -p0 < patch
+patching file lib/stdio.in.h
+$ ./configure
+$ make
+$ make check
+/bin/sh: /bin/sh: cannot execute binary file
+make[3]: *** [basic.log] Error 126
+make[3]: Leaving directory `/w/home.25/cs/ugrad/bonniel/Desktop/CS35L/newhwdiffutils/tests'
+make[2]: *** [check-TESTS] Error 2
+make[2]: Leaving directory `/w/home.25/cs/ugrad/bonniel/Desktop/CS35L/newhwdiffutils/tests'
+make[1]: *** [check-am] Error 2
+make[1]: Leaving directory `/w/home.25/cs/ugrad/bonniel/Desktop/CS35L/newhwdiffutils/tests'
+make: *** [check-recursive] Error 1
+
+Running make check gave me the same errors as when I did the lab, so I continued
+on. As stated in the spec, I ran make distdir, and that created a new file called
+diffutils-3.0.1-72c3.
+$ make distdir
+
+Then I inspected the resulting diffutils*/ChangeLog file to verify that my
+ChangeLog entry works.
+$ cd diffutils-3.0.1-72c3
+$ vim ChangeLog
+
+And sure enough, I found my commit message from before at the top of the current
+ChangeLog file, so my ChangeLog entry worked.
+
+After making sure that I ran Xming in the background on my local computer and
+enabled X11 forwarding on Putty, I switched into the directory
+~eggert/src/gnu/emacs. Then I ran the gitk command on the GNU Emacs git
+repository's master branch on SEASnet in the directory
+~eggert/src/gnu/emacs-CS-35L (as specified in the assignment hints).
+$ cd ~eggert/src/gnu/emacs-CS-35L
+$ gitk ~eggert/src/gnu/emacs-CS-35L
+
+This opened a new window in Xming, and I scrolled down until I found the newest
+merge that is not newer than 2015-01-25. I clicked on the date, and the following
+information showed up in the bottom left window:
+Author: Joakim Verona <joakim@verona.se>  2015-01-25 12:19:27
+Committer: Joakim Verona <joakim@verona.se> 2015-01-25 12:19:27
+Parent: e5087278b9bcab5847ce63d80c0d74c27f50e719 (merge master)
+Parent: a3689d3c661fe36df971c875760f8d500b5ae994 (Count MANY function args more reliably)
+Child:  c251ec96117a847799a61338e7648da8a4ade9e0 (Fix visual glitch during webkit resizing)
+Branches: master, remotes/origin/master and many more (254)
+Follows: emacs-24.4
+Precedes: emacs-25.0.90
+
+	Merge branch 'master' into xwidget
+
+In the top left window, there is a graphical display of the merges and commits,
+and I see that the mergepoint takes place after Professor Eggert's commit to
+"Count MANY function args more reliably" and before Joakim Verona's commit to
+"Fix visual glitch during webkit resizing". It looks like this:
+| |
+| o  Use bool for boolean in w32fns.c
+| |
+| o Use bool for boolean in xfns.c
+| |
+o | added hint to webkit buffer
+| |
+o | Improved glitch fix
+| |
+o | Fix visual glitch duing webkit resizing
+| |
+o | Merge branch 'master' into xwidget
+|\|
+| o Count MANY function args more reliably
+| |
+| o * lisp/emacs-lisp/cl-generic.el: Fix next-method-p test
+
+The top window shows the list of commits in topological order. It includes a tree
+diagram, authors, and dates of the commits. The bottom left window shows the
+commit message and ChangeLog entry. The bottom right window shows comments.
