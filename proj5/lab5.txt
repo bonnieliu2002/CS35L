@@ -1,0 +1,182 @@
+Bonnie Liu
+005300989
+Assignment 5
+Log
+------------
+
+I began by downloading the old stable version of coreutils that has a bug in
+its implementation of the ls program.
+
+Next, I unzipped the coreutils-with-bug.tar.gz file. The -x tag means extract;
+the -f tag means use archive file; the -v tag makes tar operate verbosely
+(gets extended info); and the -z tag tells tar to read or write archives
+through gzip, which allows tar to directly operate on several kinds of 
+compressed archives transparently.
+	$ tar -xzvf coreutils-with-bug.tar.gz
+
+After that, I made another directory called hasBug to install coreutils in.
+Then I switched into the unzipped coreutils-with-bug file and tried
+to install into the hasBug directory.
+	$ mkdir hasBug
+	$ cd ..
+	$ cd coreutils-with-bug
+	$ ./configure --prefix=/u/cs/ugrad/bonniel/Desktop/CS35L/
+	Assignment5/hasBug
+	$ make
+
+Upon running make, I got the error: conflicting types for 'futimens.' I've
+listed their function declarations below:
+	int futimens (int, char const *, struct timespec const [2]);
+	extern int futimens (int __fd, const struct timespec __times[2]) __THROW;
+
+To fix this error, I copied and pasted the contents of coreutils.diff from the
+spec into a new file I created with the same name.
+	$ touch coreutils.diff
+	$ vim coreutils.diff
+	# paste contents into coreutils.diff and exit vim
+
+Next, I applied the patch using the -p0 flag in order to retain the complete,
+unmodified file name. Then I tried once again to install.
+	$ patch -p0 < coreutils.diff
+	$ make
+	$ make install
+
+This worked properly because applying the patch gets rid of the function
+redeclaration. If we inspect coreutils.diff, we can see that the function
+futimens is renamed to coreutils_futimens, and the function tee is renamed
+to coreutils_tee. This eliminates any repetition in function names we had
+previously.
+
+In order to reproduce the bug, I switched into the hasBug directory and simply
+typed most of what was in the spec:
+	$ cd ..
+	$ cd hasBug
+	$ tmp=$(mktemp -d)
+	$ cd $tmp
+	$ touch -d '1918-11-11 11:00 GMT' wwi-armistice-cs35L
+	$ touch now
+	$ sleep 1
+	$ touch now1
+	$ TZ=UTC0 /u/cs/ugrad/bonniel/Desktop/CS35L/Assignment5/hasBug/bin/
+	ls -lt --full-time wwi-armistice-cs35L now now1
+
+I had to modify the last command so that instead of using regular ls, it used
+the buggy ls provided in hasBug's bin directory. It printed the following:
+	-rw-r--r-- 1 bonniel csugrad 0 1918-11-11 11:00:00.000000000 +0000
+	 wwi-armistice-cs35L
+	-rw-r--r-- 1 bonniel csugrad 0 2020-05-06 05:23:58.294914210 +0000
+	 now1
+	-rw-r--r-- 1 bonniel csugrad 0 2020-05-06 05:23:50.803660190 +0000
+	 now
+ 
+This is not the desired output since we want the files listed in order from
+newest to oldest. Evidently, the wwi-armistice-cs35L file with a timestamp
+from 1918 should be listed last since it has the oldest timestamp; instead,
+it seems to be treated as the newest file. To dive into why this is happening,
+I used the debugger. The assignment hints say to look at the functions with
+time in their name, so I set breakpoints at those functions, which I found
+using the Github link provided in the hints:
+	$ gdb /u/cs/ugrad/bonniel/Desktop/CS35L/Assignment5/hasBug/bin/ls
+	(gdb) b cmp_ctime
+	(gdb) b cmp_mtime
+	(gdb) run -lt --full-time
+
+The first breakpoint I was brought to was compare_mtime. To examine this
+function in greater detail, I listed the lines of code near it.
+	(gdb) l
+
+It turned out that cmp_mtime set and integer diff, which I presumed to mean
+difference, to the result of timespec_cmp, which is another function. So I
+stepped into timespec_cmp by typing the following:
+	(gdb) step
+	(gdb) l
+
+That listed the body of timespec_cmp, and I found that timespec_cmp returns
+the difference between the timestamps of a and b in seconds. This means that
+cmp_mtime returns the difference if diff does not equal 0; otherwise, a and b
+are compared by their names. (In C, 0 represents false, so the conditional
+operator would jump to the second option: comparing by name.)
+
+It seems that the timestamp for wwi-armistice-cs35L was so much earlier than
+that of now and now1 that the number of seconds that has passed between now
+and back then is no longer measurable by an integer value. This means that an
+integer overflow likely occurred. To fix this, I made a copy of the file in
+which timespec_cmp is located: timespec.h, and I named the new file
+timespec_corrected.h.
+
+	(gdb) q
+	$ cd ~/Desktop/CS35L/Assignment5/coreutils-with-bug/lib
+	$ cp timespec.h timespec_corrected.h
+	$ vim timespec_corrected.h
+	
+Instead of calculating the difference between a.tv_sec and b.tv_sec, I opted
+to compare them. I changed the function to what is shown below:
+	static inline int
+	timespec_cmp (struct timespec a, struct timespec b)
+	{
+		if (a.tv_sec > b.tv_sec)
+			return 1;
+		else if (a.tv_sec < b.tv_sec)
+			return -1;
+		else
+			return 0;
+	}
+
+I generated the diff file and moved lab5.diff from lib to coreutils-with-bug.
+From there, I vimmed into lab5.diff to specify that timespec.h was under the
+lib folder.
+	$ diff -u timespec.h timespec_corrected.h > lab5.diff
+	$ cd ..
+	$ mv ~/Desktop/CS35L/Assignment5/coreutils-with-bug/lib/lab5.diff
+	~/Desktop/CS35L/Assignment5/coreutils-with-bug
+	$ vim lab5.diff
+
+The beginning of my lab5.diff now read:
+	--- lib/timespec.h      2005-09-21 23:05:39.000000000 -0700
+	+++ lib/timespec_corrected.h    2020-05-06 15:57:55.810503000 -0700
+
+Next, I applied the patch, reinstalled, and tried reproducing the bug from
+before in the hasBug directory:
+	$ patch -p0 < lab5.diff
+	$ make
+	$ make install
+	$ cd ..
+	$ cd hasBug
+	$ tmp=$(mktemp -d)
+	$ cmd $tmp
+	$ touch -d '1918-11-11 11:00 GMT' wwi-armistice-cs35L
+	$ touch now
+	$ sleep 1
+	$ touch now1
+	$ TZ=UTC0 /u/cs/ugrad/bonniel/Desktop/CS35L/Assignment5/hasBug/bin/
+	ls -lt --full-time wwi-armistice-cs35L now now1
+
+This time, the desired output was printed in the correct order (newest to
+oldest files):
+	-rw-r--r-- 1 bonniel csugrad 0 2020-05-07 00:22:13.692527905 +0000
+	now1
+	-rw-r--r-- 1 bonniel csugrad 0 2020-05-07 00:22:09.354378795 +0000
+	now
+	-rw-r--r-- 1 bonniel csugrad 0 1918-11-11 11:00:00.000000000 +0000
+	wwi-armistice-cs35L
+
+Finally, in order to reproduce the problem in my home directory on the SEASnet
+Linux servers, I switched into my home directory and typed the following
+series of commands:
+	$ cd ~
+	$ touch -d '1918-11-11 11:00 GMT' wwi-armistice-cs35L
+	$ touch now
+	$ sleep 1
+	$ touch now1
+	$ TZ=UTC0 ls -lt --full-time wwi-armistice-cs35L now now1
+
+SEASnet did not do very well considering it outputted the same buggy output
+that I replicated at the beginning of the lab. It printed the following
+output with wwi-armistice-cs35L listed as the most recent file, which is, of
+course, incorrect:
+	-rw-r--r-- 1 bonniel csugrad 0 2054-12-17 17:28:16.000000000 +0000
+	wwi-armistice-cs35L
+	-rw-r--r-- 1 bonniel csugrad 0 2020-05-07 00:36:50.268886000 +0000
+	now1
+	-rw-r--r-- 1 bonniel csugrad 0 2020-05-07 00:36:45.268853000 +0000
+	now
