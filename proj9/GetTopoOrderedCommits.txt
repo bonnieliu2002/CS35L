@@ -1,0 +1,22 @@
+def get_topo_ordered_commits(commit_nodes, root_hashes):
+        order = []
+        visited = set()
+        temp_stack = []
+        stack = sorted(root_hashes)
+        while stack:
+                v = stack.pop()
+                if v in visited:
+                        continue
+                visited.add(v)
+                while len(temp_stack) > 0 and v not in commit_nodes[temp_stack[-1]].children:
+                        g = temp_stack.pop()
+                        order.append(g)
+                temp_stack.append(v)
+                for c in sorted(commit_nodes[v].children):
+                        if c in visited:
+                                continue
+                        stack.append(c)
+        while temp_stack:
+                g = temp_stack.pop()
+                order.append(g)
+        return order

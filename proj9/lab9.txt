@@ -1,0 +1,138 @@
+Bonnie Liu
+005300989
+Assignment 9
+Lab
+------------
+
+First, I changed into the directory ~eggert/src/gnu/emacs-CS-35L/.git. Using the
+Assignment 9 Hints, I used du to find disk space used to represent the Git
+repository. Upon Googling "du total amount of disk usage", I decided
+to use the -s option to get the summary of a grand total disk usage size of a
+directory.
+$ cd ~eggert/src/gnu/emacs-CS-35L/.git
+$ du -s
+424356  .
+
+This means 424356 bytes are used to represent the Git repository. Next, I switched
+into the folder one level up from the .git folder to find out how much disk space
+is used to represent the working files in this directory. According to the
+Assignment 9 Hints, the working files in this directory is everything but the .git
+folder, so we can find the disk space used to represent the working files in this
+directory by running the same du command as before and then subtracting the amount
+of disk space used to represent the Git repository.
+$ cd ..
+$ du -s
+590312  .
+
+590312 bytes - 424356 bytes = 165956 bytes were used to represent the working
+files in this directory. To find which file(s) consume most of the repository
+space, I switched back into the .git folder, ran du again, and piped the result
+into a sort command. For the sort command, I used the -h option, which stands for
+--human-numeric-sort, in order to compare human readable numbers.
+$ cd .git
+$ du | sort -h
+
+Since the sort command sorts in increasing order, the last few lines (except for
+the . because . represents the entire .git directory) outputted were the files
+that consume most of the repository space:
+7892    ./objects/info
+415112  ./objects/pack
+423008  ./objects
+
+It makes sense that ./objects takes up the most space since it contains all the
+objects, including trees, blobs, commits, and annotated tags. This is bound to
+take up a lot of space as it stores the history of all the commits over the years.
+
+Using the hint given, I looked into git branch, and I found that without any
+arguments, git branch lists existing branches. Given the -r option, git branch
+lists the remote-tracking branches. Since each branch is listed on a newline, I
+decided to wc -l to count the number of lines, which equals the number of
+branches.
+$ git branch | wc -l
+176
+$ git branch -r | wc -l
+177
+
+This means that there are 176 branches local to the repository, and 177 branches
+remote to the repository.
+
+Following the Assignment 9 Hints, I looked into git remote, and I found that git
+remote allows you to see which remote servers you have configured. Additionally,
+the -v option shows you the URLs that Git has stored for the shortname to be used
+when reading and writing to that remote.
+$ git remote -v
+origin  /u/cs/fac/eggert/src/gnu/emacs (fetch)
+origin  /u/cs/fac/eggert/src/gnu/emacs (push)
+savannah        https://git.savannah.gnu.org/git/emacs.git (fetch)
+savannah        https://git.savannah.gnu.org/git/emacs.git (push)
+
+2 repositories are remote to this repository, and they are at
+https://git.savannah.gnu.org/git/emacs.git and /u/cs/fac/eggert/src/gnu/emacs.
+
+I used the link provided in the hints to find out more about git for-each-ref, and
+the --sort=<key> option takes in a sort key. Additionally, there is a
+--count=<count> option that makes it stop after showing <count> many refs.
+$ git for-each-ref --sort="-committerdate" --count=10
+104b68b670eb6de6614c562ae6b18c009b20584f commit refs/heads/master
+104b68b670eb6de6614c562ae6b18c009b20584f commit refs/remotes/origin/HEAD
+104b68b670eb6de6614c562ae6b18c009b20584f commit refs/remotes/origin/master
+c36c5a3dedbb2e0349be1b6c3b7567ea7b594f1c commit refs/tags/emacs-27.0.91
+c5f255d68156926923232b1edadf50faac527861 commit refs/tags/emacs-27.0.90
+d2873706749ef68803e79bab6109a534f4c9d23a commit refs/heads/scratch/joaot/make-completion-at-point-function
+d2873706749ef68803e79bab6109a534f4c9d23a commit refs/remotes/origin/scratch/joaot/make-completion-at-point-function
+dd3fa9411a28175f9a1a984a69cfa7162023c5df commit refs/heads/feature/windows-with-utils
+dd3fa9411a28175f9a1a984a69cfa7162023c5df commit refs/remotes/origin/feature/windows-with-utils
+8f22251e595d7598d6643b0d24bf5f409dc59fa8 commit refs/heads/scratch/completion-api
+
+The local branch most recently committed to is refs/heads/master.
+
+To find how many commits are in the master branch, I used git rev-list with the
+--count option to print a number stating how many commits would have been listed.
+$ git rev-list --count master
+141268
+
+Thus, 141268 commits are in the master branch.
+
+To find what percentage of commits that are in any branch, I first need to find
+how many commits in all branches there are total. For that, I did
+$ git rev-list --count --all
+145595
+
+Thus, 141268/145595 ~= 97% of commits that are in any branch are also in the
+master branch.
+
+git shortlog summarizes git log output in a way where each commit will be grouped
+by author and title. I decided to use the -s option, which stands for --summary,
+to suppress commit description and provide a commit count summary. I also used the
+-n option, which stands for --numbered, to sort output according to the number of
+commits per author instead of author alphabetic order. Lastly, I used the
+--since=<date> option to show commits more recent that a specific date.
+$ git shortlog -s -n --since=2013 master
+  3710  Eli Zaretskii
+  3610  Paul Eggert
+  3380  Glenn Morris
+  1833  Lars Ingebrigtsen
+  1725  Stefan Monnier
+  1585  Michael Albinus
+   649  Dmitry Gutov
+   604  Noam Postavsky
+   536  Juri Linkov
+   490  Alan Mackenzie
+
+There were many more lines of output, but I just took the first 10. The second
+column shows the name of the top ten master-branch-committers, and the first
+column shows the number of commits each of them authored during that period.
+
+I ran Xming in the background, enabled X11 forwarding in Putty, and then used the
+gitk command to visualize the commit graph in this repository.
+$ ssh -Y bonniel@lnxsrv10.seas.ucla.edu
+$ cd ~eggert/src/gnu/emacs-CS-35L
+$ gitk
+
+After the Xming window opened up, I searched the commits one by one by their SHA1
+IDs. Since the Assignment 9 Hints said we only need to list the merge commits,
+I looked at the number of parents each commit had. If a commit is a merge commit,
+it will have 2 parents. These are the merge commits I found:
+0c06b93c1e467debd401eb0b3be4652fde14fa95
+abcb2e62dae6aa26308f7ac9efc89247f89cbe65
+98ac36efe4ce4bd3a0bca76fc73ce6c7abaa4371

@@ -1,0 +1,31 @@
+def build_commit_graph(git_dir, local_branch_heads):
+        root_hashes = set()
+        visited = set()
+        commit_nodes = {} # dictionary mapping commit_hash to CommitNode
+        stack = local_branch_heads
+        while len(stack) > 0:
+                commit_hash = stack.pop()
+                if commit_hash in visited:
+                        continue
+                visited.add(commit_hash)
+                if commit_hash not in commit_nodes:
+                        commit_node = CommitNode(commit_hash)
+                        commit_nodes[commit_hash] = commit_node
+                commit_node = commit_nodes[commit_hash]
+                filename = git_dir + "objects/" + commit_hash[:2] + "/" + commit_hash[2:]
+                compressed_contents = open(filename, 'rb').read()
+                decompressed_contents = zlib.decompress(compressed_contents).decode()
+                split_list = decompressed_contents.split("\n")
+                for i in split_list:
+                        if i[:6] == "parent":
+                                pair = i.split()
+                                commit_node.parents.add(pair[1])
+                if not commit_node.parents:
+                        root_hashes.add(commit_hash)
+                for i in commit_node.parents:
+                        if i not in visited:
+                                stack.append(i)
+                        if i not in commit_nodes:
+                                commit_nodes[i] = CommitNode(i)
+                        commit_nodes[i].children.add(commit_hash)
+        return commit_nodes, root_hashes
