@@ -1,0 +1,38 @@
+#!/bin/bash
+maxArgs=2
+rec='-r'
+if [ "$#" -eq "$maxArgs" ] && [ "$1" = "$rec" ]; then
+	D=$2
+	if [ ! -d "$D" ]; then
+		1>&2 echo "Directory not found!"
+		exit 1
+	fi
+	# RECURSIVE IMPLEMENTATION HERE
+	find "$D" -type d -exec $0 {} ';'
+	exit 0
+else
+	if test "$#" -eq 0; then
+		D="."
+	else
+		if test "$#" -eq 1; then
+			D=$1
+		else
+			1>&2 echo "Wrong number of arguments"
+			exit 1
+		fi
+	fi
+fi
+
+if [ ! -d "$D" ]; then
+	1>&2 echo "Directory not found!"
+	exit 1
+fi
+
+#BASIC IMPLEMENTATION HERE
+VALID=`find "$D" -mindepth 1 -maxdepth 1 | egrep "/[A-Za-z_][-._A-Za-z]{,12}$"`
+find "$D" -mindepth 1 -maxdepth 1 | egrep -v "/[A-Za-z_][-._A-Za-z]{,12}$" |
+ xargs -r -n 1 -d '\n' ls -1dp --show-control-chars
+echo "$VALID" | sort -f | uniq -D -i |
+ xargs -r -n 1 -d '\n' ls -1dp --show-control-chars
+
+exit 0

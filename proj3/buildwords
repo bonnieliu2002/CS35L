@@ -1,0 +1,12 @@
+#! /bin/bash
+# buildwords ---
+sed -E 's/\?|<u>|<\/u>//g' |
+tr '`' "'" |
+tr '-' ' ' |
+grep -E ' *<td>.+<\/td> *$' |
+sed 's/^ *<td>//' |
+sed 's/ *<\/td>$//' |
+tr [[:upper:]] [[:lower:]] |
+tr ' ' '\n' |
+sed "/[^pk'mnwlhaeiou]/d" |
+sort -u

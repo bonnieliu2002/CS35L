@@ -1,0 +1,63 @@
+Bonnie Liu
+005300989
+Assignment 3
+Log
+------------
+
+- I typed the shell command locale and found that it did not output what I
+  wanted, so I typed export LC_ALL='C' to make sure locale outputs correctly.
+  Just to be sure, I typed locale again, and it printed LC_CTYPE="C", as 
+  desired for this lab.
+- I first typed less usr/share/dict/words to see what kind of file I was
+  dealing with, and sure enough, this file is not sorted. I typed sort 
+  /usr/share/dict/words > words to sort it. To check that it was sorted, I 
+  typed less words and scrolled down to check that the program did what I
+  intended for it to do.
+- I typed wget web.cs.ucla.edu/classes/spring20/cs35L/assign/assign3.html to 
+  obtain a copy of this assignment's HTML web page as a text file. When I
+  typed ls, I found a new file titled assign3.html.
+- When I typed tr -c 'A-Za-z' '[\n*]' < assign3.html, a list of words (one
+  word per line) with empty lines between them appeared. That's because the
+  command I ran translates anything that is not a letter into a newline.
+- Typing tr -cs 'A-Za-z' '[\n*]' < assign3.html outputs the same thing as the
+  command above but without all the empty spaces between each line. This is
+  because -s squeezes any occurrence of a non-letter into one newline.
+- When I typed tr -cs 'A-Za-z' '[\n*]' < assign3.html | sort, the lines were
+  sorted in alphabetical order from top to bottom and there were multiple
+  words per line.
+- When I typed tr -cs 'A-Za-z' '[\n*]' < assign3.html | sort -u, the empty
+  lines listed at the top when I typed in the previous command disappeared
+  because sort -u makes sure each element is unique with no duplicates.
+- Typing tr -cs 'A-Za-z' '[\n*]' < assign3.html | sort -u | comm - words gives
+  me three columns. comm takes two inputs. The hyphen means that input will be
+  taken from stdin as opposed to a named file, such as words. The first column
+  prints the words that only appear in the first file. The second column 
+  prints only the words that appear only in the second file. The third column 
+  prints the words that appear in both files.
+- Typing tr -cs 'A-Za-z' '[\n*]' < assign3.html | sort -u | comm -23 - words 
+  prints only one column, and that column contains the words/lines that only
+  appear in the first file because -23 eliminates the second and third column
+  from the output of the command before this one.
+- I typed wget https://www.mauimapp.com/moolelo/hwnwdshw.htm to obtain a copy
+  of that web page.
+
+- I ran my Hawaiian spelling checker on the CS 35L Assignment 3 webpage by 
+  typing the comman less assign3.html.1 | tr [[:upper:]] [[:lower:]] | tr -cs
+  "A-Za-z" '[\n*]' | sort -u | comm -23 - hwords | wc -w , and I got 557 for
+  the distinct misspelled words on this web page using the Hawaiian checker.
+- I ran my English spelling checker on the CS 35L Assignment 3 webpage by
+  typing the command less assign3.html.1 | tr [[:upper:]] [[:lower:]] | tr -cs
+  "A-Za-z" '[\n*]' | sort -u | comm -23 - words | wc -w , and I got 51 for the
+  distinct misspelled words on this web page using the English checker.
+- I found that there were 3 distinct words on this webpage that the English
+  checker reported as misspelled but the Hawaiian checker did not. I found
+  this by typing less assign3.html.1 | tr [[:upper:]] [[:lower:]] | tr -cs 
+  "A-Za-z" '[\n*]' | sort -u | comm -23 - words | comm -12 - words | wc -w.
+  Two examples of these words are wiki and lau. I found this by removing the 
+  | wc -w from the previous command.
+- I found that there were 509 distinct words on this webpage that the Hawaiian
+  checker reporter as mispelled but the English checker did not. I found this
+  by typing less assign3.html.1 | tr [[:upper:]] [[:lower:]] | tr -cs "A-Za-z"
+  '[\n*]' | sort -u | comm -23 - hwords | comm -12 - words | wc -w. Two
+  examples of these words are za and your. I found this by removing the 
+  | wc -w from the previous command.
