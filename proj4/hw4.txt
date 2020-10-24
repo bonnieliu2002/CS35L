@@ -1,0 +1,23 @@
+Bonnie Liu
+005300989
+Assignment 4
+Homework
+------------
+
+1. The patch slightly lowers the time performance of ls because it has to make
+sure not to display . and ..
+2. If the company adopts this patched version of Coreutils instead of the
+default one, it should watch out for past usages of ls -a -A. If previously,
+the desired output from ls -a -A is effectively the same thing as ls -a, then
+after patching, ls -a -A will no longer produce the same output. Thus to avoid
+this error, the company should update any instances of ls -a -A where the
+desired output is actually ls -a to ls -a.
+3. /dev/null is an empty file, so trying to invoke the script on an empty file
+doesn't work and returns an index out of range error. This is because at line
+34, the program tries to call random.choice(self.lines). Random raises an 
+IndexError if self.lines is empty.
+4. I get an IOError due to invalid syntax. In Python3, except IOError as 
+(errno, strerror): is not valid syntax.
+5. When I run my shuf.py script with Python2 rather than Python3, I get a
+SyntaxError because while Python3 recognizes tick marks (`), Python2 does not
+and calls it a Non-ASCII character.

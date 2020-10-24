@@ -1,0 +1,75 @@
+Bonnie Liu
+005300989
+Assignment 4
+Log
+------------
+
+In order to verify the problem, I copied the la script into my own shell
+script.
+	#!/bin/sh
+	exec ls -a "$@"
+I made this script executable by typing
+	chmod +x la
+Then I made a brand new directory called test and made two files within it
+called .foo and bar.
+	mkdir test
+	cd test
+	touch .foo
+	touch bar
+Then I ran ./la -A, which did indeed output ., .., .foo, and bar, as stated
+in the spec, thus verifying the problem. I checked the Coreutils version that
+/usr/bin/ls corresponds to by typing
+	/usr/bin/ls -- version
+and I found that this was version 8.22.
+
+I started by downloading the Coreutils 8.29 source code compressed tarball,
+its signature, and its GNU keyring. Then I ran
+	gpg --verify --keyring ./gnu-keyring.gpg coreutils-8.29.tar.xz.sig
+I got the following result:
+	gpg: Signature made Wed 27 Dec 2017 10:29:05 AM PST using RSA key ID 306037D9
+	gpg: Good signature from "Pádraig Brady <P@draigBrady.com>"
+	gpg:                 aka "Pádraig Brady <pbrady@redhat.com>"
+	gpg:                 aka "Pádraig Brady <pixelbeat@gnu.org>"
+	gpg: WARNING: This key is not certified with a trusted signature!
+	gpg:          There is no indication that the signature belongs to the owner.
+	Primary key fingerprint: 6C37 DC12 121A 5006 BC1D  B804 DF6F D971 3060 37D9
+This warning occurred because I downloaded the signature online.
+
+Next, I unzipped the coreutils-8.29.tar.xz file. The -x tag means extract; the
+-f tag means use archive file; the -v tag makes tar operate verbosely (gets 
+extended info); and the -z tag tells tar to read or write archives through
+gzip, which allows tar to directly operate on several kinds of compressed 
+archives transparently.
+	tar -xzvf coreutils-8.29.tar.xz
+
+After that, I made another directory called coreutilsinstall and ran 
+./configure:
+	mkdir coreutilsinstall
+	cd ..
+	cd coreutils-8.29
+	./configure --prefix=/u/cs/ugrad/bonniel/Desktop/CS35L/coreutilsinstall
+The prefix flag meant install files in the coreutilsinstall directory.
+
+Then I compiled using make and then used make install.
+	make
+	make install
+
+Next, I copy and pasted the contents of the patch of Bug #30963 Message #10
+into a file I named mypatch. The -p1 flag strips one level of directory.
+	vim mypatch
+	patch -p1 < mypatch
+There were a hunk failed message, which could indicate the similarities of a
+hunk don't match what's in the original file.
+
+Then I compiled using make then make install again.
+	make
+	make install
+
+To test if the patch worked, I tested it on the bin directory.
+	cd ..
+	cd test
+	cd bin
+	./ls -A
+Prior to the patch, ./ls -A would have printed all the directories, including
+. and 
+.., but after applying the patch, it omitted the . and .. from the list.
