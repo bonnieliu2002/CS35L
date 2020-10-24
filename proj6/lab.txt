@@ -1,0 +1,223 @@
+Bonnie Liu
+005300989
+Assignment 6
+Log
+------------
+
+I started by implementing tr2b.c. I knew tr2b.c took 2 inputs.
+After doing some research online, I found that the name by which
+the program is called will be counted as the first argument, so in
+reality, we want exactly 3 arguments for this program. If argc,
+which is argument count, was less than 3, I printed to stderr that
+there were not enough arguments and exited. If argc was greater
+than 3, I printed to stderr that there were too many arguments and
+exited. Then I set a constant pointer to an array of characters
+called from to argv[1] (the first input). Similarly, I set another
+constant pointer to an array of characters called to to argv[2].
+Using strlen, I found each of their sizes, and if they weren't
+equal to each other, I printed to stderr that the string lengths
+were not equal and exited. Next, I made sure that from did not
+possess 2 or more of the same letters. To make this process easier,
+I copied each character of from and put it in an array of
+characters. Then I sorted this new array and afterwards used
+another for loop to check if any 2 letters were the same. If there
+were duplicates, I immediately printed to stderr that from has
+duplicate bytes and exited.
+
+If the program made it to this point, that means that we can start
+printing the characters! I made a function called printChar that
+takes in a character and 2 constant pointers to different
+characters. Inside printChar, I looped through the array of
+characters from was pointing at, and if any element inside from
+equaled the character passed in, I printed the character in to 
+corresponding to the same index and returned. If the character
+passed in did not equal any letter in from, I simply printed the
+original character out.
+
+I tested tr2b.c by copying and pasting the following sentence into
+a test file I created: Pack my box with five dozen liquor jugs. I
+chose this sentence because it's a pangram, meaning it contains all
+letters of the alphabet. Here are a few of the test cases I ran
+after compiling it.
+$ gcc tr2b.c -g -o tr2b
+$ ./tr2b "abc" "xyz" < testFile
+Pxzk my yox with five dozen liquor jugs.
+$ ./tr2b "Pack" "Eats" < testFile
+Eats my box with five dozen liquor jugs.
+$ ./tr2b "Pack." "Eats" < testFile
+Eats my box with five dozen liquor jugs?
+
+For tr2u.c, I copied my code from tr2b.c by typing the following:
+$ cp tr2b.c tr2u.c
+
+Then I vimmed into tr2u.c. I replaced all the printf statements
+with write statements. Read and write statements take 3 inputs:
+file descriptor, buffer to read data from, and length of buffer, in
+that order. For the write statements, I made an array of characters
+that held the error message so that I could easily use strlen on
+the array instead of counting the number of characters.
+
+Once I got to the while loop, I had to read from standard input.
+I made a pointer that pointed to a dynamically allocated character.
+I then dereferenced the pointer and passed that character into
+printChar. If the read had an error, however, I would print an
+error message to stderr, free c_pointer, and exit. If there was no
+error, the program would run printChar (see description below).
+Upon running printChar, the program would free c_pointer and then
+dynamically allocate 1 byte to it to hold exactly 1 character.
+
+In printChar, I made some minor changes. I made another character
+variable called outputMe, which was set initially to c. If any
+letter in from equals c, I would set outputMe to the corresponding
+element in to with the same index as the from element and break.
+Outside the loop, I wrote the contents of outputMe into stdout.
+
+After compiling it, I ran the same test cases listed above, except
+this time I called tr2u instead of tr2b.
+$ gcc tr2u.c -g -o tr2u
+
+The program passed all the test cases, so I moved on to generating
+a large file of random charactes by using Python.
+
+I typed the following command in Putty:
+$ vim genRandChars.py
+
+In the file, I typed the following:
+#!/usr/bin/python
+
+import random, string
+
+random = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(6000000)])
+print random
+
+Then I typed the following commands in Linux:
+$ chmod +x genRandChars.py
+$ python genRandChars.py > bigTest
+
+bigTest thus held 6 million randomly generated characters. Next, I
+used strace after researching online about how to use it. I found
+the -c option produces a summary in a helpful table. First, I
+compared the system calls issued by my tr2b and tr2u commands when
+copying one file to another.
+$ strace -c ./tr2b "abc" "xyz" < bigTest > output
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 50.34    0.000440           1       733           write
+ 49.66    0.000434           1       735           read
+  0.00    0.000000           0         2           open
+  0.00    0.000000           0         2           close
+  0.00    0.000000           0         4           fstat
+  0.00    0.000000           0         9           mmap
+  0.00    0.000000           0         4           mprotect
+  0.00    0.000000           0         1           munmap
+  0.00    0.000000           0         1           brk
+  0.00    0.000000           0         1         1 access
+  0.00    0.000000           0         1           execve
+  0.00    0.000000           0         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000874                  1494         1 total
+
+Compare the result of the above command with this one:
+$ strace -c ./tr2u "abc" "xyz" < bigTest > output1
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 54.70   30.159658           5   6000001           write
+ 45.30   24.972869           4   6000003           read
+  0.00    0.000044           6         7           mmap
+  0.00    0.000028           7         4           mprotect
+  0.00    0.000021           5         4           brk
+  0.00    0.000019          10         2           open
+  0.00    0.000013          13         1         1 access
+  0.00    0.000010          10         1           munmap
+  0.00    0.000007           4         2           fstat
+  0.00    0.000006           3         2           close
+  0.00    0.000003           3         1           arch_prctl
+  0.00    0.000000           0         1           execve
+------ ----------- ----------- --------- --------- ----------------
+100.00   55.132678              12000029         1 total
+
+The buffered command took less than 1 second to complete while the
+unbuffered one took almost 1 minute to finish. That's because the
+buffered command made only 1494 calls while the unbuffered command
+made 12000029 calls.
+
+Next, I compared the system calls issued by my tr2b and tr2u
+commands when copying a file to my terminal.
+$ strace -c ./tr2b "abc" "xyz" < bigTest
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 89.92    0.016108           3      5860           write
+  7.92    0.001419           2       735           read
+  0.69    0.000123          14         9           mmap
+  0.47    0.000084          84         1         1 access
+  0.41    0.000074          74         1           execve
+  0.17    0.000031           8         4           mprotect
+  0.13    0.000023          12         2           open
+  0.12    0.000021           5         4           fstat
+  0.06    0.000011          11         1           munmap
+  0.05    0.000009           9         1           brk
+  0.04    0.000007           4         2           close
+  0.02    0.000003           3         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.017913                  6621         1 total
+$ strace -c ./tr2u "abc" "xyz" < bigTest
+... LOTS OF JUNK DATA ...
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 54.94   31.518033           5   6000001           write
+ 45.06   25.855026           4   6000003           read
+  0.00    0.000020           5         4           mprotect
+  0.00    0.000012           3         4           brk
+  0.00    0.000011          11         1           munmap
+  0.00    0.000004           1         7           mmap
+  0.00    0.000004           4         1           arch_prctl
+  0.00    0.000000           0         2           open
+  0.00    0.000000           0         2           close
+  0.00    0.000000           0         2           fstat
+  0.00    0.000000           0         1         1 access
+  0.00    0.000000           0         1           execve
+------ ----------- ----------- --------- --------- ----------------
+100.00   57.373110              12000029         1 total
+
+Once again, it's evident that the unbuffered command took far
+longer than the buffered command. The buffered command took only
+6621 calls and 0.017913 seconds to run while the unbuffered command
+took a whopping 12000029 calls and 57.373110 seconds to run.
+
+Next, I tried running the time command to measure how much faster
+one program is, compared to the other, when copying the same amount
+of data.
+$ time ./tr2b "abc" "xyz" < bigTest > output2
+
+real    0m0.257s
+user    0m0.190s
+sys     0m0.013s
+$ time ./tr2u "abc" "xyz" < bigTest > output3
+
+real    0m13.448s
+user    0m2.117s
+sys     0m11.211s
+
+We see that the buffered program takes only 0.257 seconds to copy
+one file to another while the unbuffered command takes 13.448
+seconds to do so. That's a 13.191-second difference, and the
+buffered program is approximately 52 times faster than the
+unbuffered one!
+
+I then examined how long it took for each program to copy a file to
+terminal:
+$ time ./tr2b "abc" "xyz" < bigTest
+
+real    0m2.515s
+user    0m0.285s
+sys     0m0.048s
+$ time ./tr2u "abc" "xyz" < bigTest
+
+real    0m12.538s
+user    0m2.041s
+sys     0m10.478s
+
+We see that the buffered program takes only 2.515 seconds to copy a
+file to terminal while the unbuffered command takes 12.538 seconds
+to do the same. That's a 10.023-second difference, and the buffered
+program is almost 5 times faster than the unbuffered one!
